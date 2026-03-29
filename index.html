@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>分帳小幫手</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #F7F5F0;
+    --surface: #FFFFFF;
+    --surface2: #F0EDE6;
+    --border: #E2DDD4;
+    --text: #1A1814;
+    --text2: #6B6760;
+    --text3: #9E9B96;
+    --accent: #2D5A3D;
+    --accent-light: #EAF3DE;
+    --danger: #C0392B;
+    --danger-light: #FCEBEB;
+    --gold: #A0782A;
+    --gold-light: #FAEEDA;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .app { display: flex; flex-direction: column; min-height: 100vh; max-width: 480px; margin: 0 auto; }
+
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px 0;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .app-title { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+  .app-title span { color: var(--accent); }
+
+  .tabs { display: flex; gap: 2px; overflow-x: auto; padding-bottom: 1px; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex-shrink: 0; padding: 8px 14px;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    border: none; background: none; cursor: pointer;
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    color: var(--text2); transition: all 0.15s;
+    border-bottom: 2px solid transparent; white-space: nowrap;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--accent-light); }
+
+  .content { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .page { display: none; flex-direction: column; gap: 16px; }
+  .page.active { display: flex; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow);
+  }
+  .card-title { font-size: 12px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .form-group:last-child { margin-bottom: 0; }
+  label { font-size: 13px; font-weight: 500; color: var(--text2); }
+  input[type="text"], input[type="number"], input[type="date"], select, textarea {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-family: inherit; font-size: 14px; color: var(--text);
+    background: var(--bg); outline: none; transition: border-color 0.15s;
+    -webkit-appearance: none; appearance: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); background: var(--surface); }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B6760' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 11px 16px; border-radius: var(--radius-sm); border: none;
+    font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:active { background: #1e3d29; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-danger { background: var(--danger-light); color: var(--danger); }
+  .btn-full { width: 100%; }
+  .btn-sm { padding: 6px 10px; font-size: 12px; }
+
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 2px 7px; border-radius: 20px;
+    font-size: 11px; font-weight: 500; white-space: nowrap;
+  }
+  .badge-core { background: var(--accent-light); color: var(--accent); }
+  .badge-guest { background: var(--gold-light); color: var(--gold); }
+  .badge-bday { background: #FBEAF0; color: #993556; }
+
+  .list-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .list-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .list-item:first-child { padding-top: 0; }
+  .list-item-main { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+  .list-item-name { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .list-item-sub { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  .list-item-amount { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .list-item-amount span { font-family: 'DM Mono', monospace; font-weight: 600; color: var(--accent); }
+  .list-item-actions { display: flex; gap: 6px; margin-left: 10px; flex-shrink: 0; }
+
+  .result-row.paid { opacity: 0.5; background: var(--surface2); }
+  .result-row.paid .result-amount { color: var(--text3); text-decoration: line-through; }
+  .btn-paid {
+    padding: 6px 12px; border: 1.5px solid var(--accent); border-radius: var(--radius-sm);
+    background: transparent; color: var(--accent); font-size: 12px; font-weight: 600;
+    font-family: inherit; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-paid:hover { background: var(--accent-light); }
+  .btn-paid.is-paid { border-color: var(--border); color: var(--text3); background: transparent; }
+  .btn-paid.is-paid:hover { background: var(--surface2); }
+
+  .radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .radio-btn {
+    padding: 8px 14px; border: 1px solid var(--border); border-radius: 20px;
+    font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text2);
+    background: var(--bg); transition: all 0.15s; user-select: none;
+  }
+  .radio-btn.selected { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-label { font-size: 14px; font-weight: 500; }
+  .toggle-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .toggle {
+    position: relative; width: 44px; height: 24px; min-width: 44px;
+    background: var(--border); border-radius: 12px;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle.on::after { transform: translateX(20px); }
+
+  .chip-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: 20px;
+    font-size: 13px; font-weight: 500; cursor: pointer; user-select: none;
+    background: var(--bg); color: var(--text2); transition: all 0.15s;
+  }
+  .chip.selected { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .chip.bday-chip.selected { background: #FBEAF0; border-color: #D4537E; color: #993556; }
+
+  .type-selector { display: flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .type-btn {
+    flex: 1; padding: 10px; text-align: center; font-size: 13px; font-weight: 500;
+    cursor: pointer; background: var(--bg); color: var(--text2); transition: all 0.15s;
+    border: none; font-family: inherit;
+  }
+  .type-btn.active { background: var(--accent); color: #fff; }
+
+  .amount-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 0; border-bottom: 1px solid var(--border);
+  }
+  .amount-row:last-child { border-bottom: none; }
+  .amount-name { flex: 1; font-size: 14px; font-weight: 500; }
+  .amount-badges { display: flex; gap: 4px; flex-shrink: 0; }
+  .amount-input-wrap { width: 88px; flex-shrink: 0; }
+  .amount-input-wrap input {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-family: 'DM Mono', monospace;
+    font-size: 14px; background: var(--bg); outline: none; text-align: right;
+    -webkit-appearance: none;
+  }
+  .amount-input-wrap input:focus { border-color: var(--accent); background: var(--surface); }
+
+  .result-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px; background: var(--bg); border-radius: var(--radius-sm);
+    margin-bottom: 8px; border: 1px solid var(--border);
+  }
+  .result-row:last-child { margin-bottom: 0; }
+  .result-from { font-size: 12px; color: var(--text2); }
+  .result-arrow { font-size: 11px; color: var(--text3); margin: 2px 0; }
+  .result-to { font-size: 15px; font-weight: 700; }
+  .result-amount { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; color: var(--accent); }
+
+  .summary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .summary-table th { text-align: left; padding: 6px 8px; color: var(--text2); font-weight: 600; border-bottom: 2px solid var(--border); font-size: 12px; }
+  .summary-table td { padding: 9px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .summary-table tr:last-child td { border-bottom: none; }
+
+  .empty { text-align: center; padding: 32px 20px; color: var(--text3); }
+  .empty-icon { font-size: 32px; margin-bottom: 8px; }
+  .empty-text { font-size: 14px; }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+
+  .warning-box {
+    background: var(--gold-light); border: 1px solid #FAC775;
+    border-radius: var(--radius-sm); padding: 12px; font-size: 13px; color: var(--gold);
+    display: flex; gap: 8px; align-items: flex-start; line-height: 1.5;
+  }
+
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 200;
+    align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: var(--radius) var(--radius) 0 0;
+    padding: 24px 20px; width: 100%; max-width: 480px;
+    max-height: 85vh; overflow-y: auto;
+  }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+
+  .toast {
+    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+    background: #1A1814; color: #fff; padding: 10px 20px;
+    border-radius: 20px; font-size: 13px; z-index: 999;
+    opacity: 0; transition: opacity 0.25s; pointer-events: none;
+    white-space: nowrap; max-width: 90vw; text-align: center;
+  }
+  .toast.show { opacity: 1; }
+
+  .mono { font-family: 'DM Mono', monospace; }
+  .bottom-safe { height: 24px; }
+
+  @media (max-width: 360px) {
+    .content { padding: 14px; }
+    .tab { padding: 8px 10px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-top">
+      <div class="app-title">分帳<span>小幫手</span></div>
+      <button class="btn btn-secondary btn-sm" onclick="showBackupModal()">💾 備份</button>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('people')">👥 人員</button>
+      <button class="tab" onclick="switchTab('event')">🎉 活動</button>
+      <button class="tab" onclick="switchTab('expense')">💰 記帳</button>
+      <button class="tab" onclick="switchTab('split')">📊 分帳</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- 人員頁 -->
+    <div class="page active" id="page-people">
+      <div class="card">
+        <div class="card-title">新增人員</div>
+        <div class="form-group">
+          <label>姓名</label>
+          <input type="text" id="person-name" placeholder="輸入名字" maxlength="20">
+        </div>
+        <div class="form-group">
+          <label>類型</label>
+          <div class="radio-group">
+            <div class="radio-btn selected" id="type-core" onclick="selectPersonType('core')">核心成員</div>
+            <div class="radio-btn" id="type-guest" onclick="selectPersonType('guest')">外部朋友</div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="addPerson()">＋ 新增人員</button>
+      </div>
+      <div class="card">
+        <div class="card-title">人員清單</div>
+        <div id="people-list">
+          <div class="empty"><div class="empty-icon">👤</div><div class="empty-text">尚未新增任何人員</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 活動頁 -->
+    <div class="page" id="page-event">
+      <div class="card">
+        <div class="card-title">新增活動</div>
+        <div class="form-group">
+          <label>活動名稱</label>
+          <input type="text" id="event-name" placeholder="例：小明生日聚餐">
+        </div>
+        <div class="form-group">
+          <label>活動日期</label>
+          <input type="date" id="event-date">
+        </div>
+        <div class="form-group">
+          <label>參與人員 <span style="color:var(--text3);font-weight:400">（點選勾選）</span></label>
+          <div class="chip-wrap" id="event-participant-chips">
+            <span style="color:var(--text3);font-size:13px">請先在人員頁新增成員</span>
+          </div>
+        </div>
+        <div class="form-group" id="birthday-section" style="display:none">
+          <label>壽星 <span style="color:var(--text3);font-weight:400">（可多選）</span></label>
+          <div class="chip-wrap" id="event-birthday-chips"></div>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="addEvent()">＋ 新增活動</button>
+      </div>
+      <div class="card">
+        <div class="card-title">活動清單</div>
+        <div id="event-list">
+          <div class="empty"><div class="empty-icon">🎉</div><div class="empty-text">尚未新增任何活動</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 記帳頁 -->
+    <div class="page" id="page-expense">
+      <div class="card">
+        <div class="card-title">選擇活動</div>
+        <select id="expense-event-select" onchange="onExpenseEventChange()">
+          <option value="">— 請選擇活動 —</option>
+        </select>
+      </div>
+
+      <div id="expense-form-area" style="display:none">
+        <div class="card">
+          <div class="card-title">新增費用</div>
+          <div class="form-group">
+            <label>費用說明</label>
+            <input type="text" id="expense-note" placeholder="例：火鍋費用">
+          </div>
+          <div class="form-group">
+            <label>記帳類型</label>
+            <div class="type-selector">
+              <button class="type-btn active" id="etype-even" onclick="selectExpenseType('even')">均分型</button>
+              <button class="type-btn" id="etype-custom" onclick="selectExpenseType('custom')">各自金額型</button>
+            </div>
+          </div>
+
+          <!-- 均分型 -->
+          <div id="even-section">
+            <div class="form-group">
+              <label>總金額（NT$）</label>
+              <input type="number" id="expense-amount" placeholder="0" min="0">
+            </div>
+            <div class="form-group">
+              <label>誰先墊付</label>
+              <select id="expense-payer"></select>
+            </div>
+            <div class="form-group">
+              <label>費用規則</label>
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-label">壽星不需支付</div>
+                  <div class="toggle-sub">壽星份由其他核心成員分攤</div>
+                </div>
+                <div class="toggle on" id="toggle-bday" onclick="toggleOpt('bday')"></div>
+              </div>
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-label">外部朋友需支付</div>
+                  <div class="toggle-sub">關閉則外部朋友此筆免付</div>
+                </div>
+                <div class="toggle on" id="toggle-guest" onclick="toggleOpt('guest')"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 各自金額型 -->
+          <div id="custom-section" style="display:none">
+            <div class="form-group">
+              <label>誰先墊付</label>
+              <select id="expense-payer-custom"></select>
+            </div>
+            <div class="form-group">
+              <label>各人金額</label>
+              <div style="font-size:12px;color:var(--text3);margin-bottom:8px">壽星份免付，由其他核心成員均攤</div>
+              <div id="custom-amount-rows"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:var(--text2);font-weight:600;border-top:1px solid var(--border);">
+              <span>合計</span>
+              <span class="mono" id="custom-total">NT$ 0</span>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-full" onclick="addExpense()" style="margin-top:4px">＋ 新增這筆費用</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">本次活動費用清單</div>
+          <div id="expense-list-area">
+            <div class="empty"><div class="empty-icon">💳</div><div class="empty-text">尚無費用記錄</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分帳頁 -->
+    <div class="page" id="page-split">
+      <div class="card">
+        <div class="card-title">選擇活動</div>
+        <select id="split-event-select" onchange="calcSplit()">
+          <option value="">— 請選擇活動 —</option>
+        </select>
+      </div>
+      <div id="split-result-area"></div>
+    </div>
+
+  </div>
+  <div class="bottom-safe"></div>
+</div>
+
+<!-- Backup Modal -->
+<div class="modal-overlay" id="backup-modal">
+  <div class="modal">
+    <div class="modal-title">💾 備份與匯出</div>
+    <div class="warning-box" style="margin-bottom:16px">
+      ⚠️ 網頁版資料不會永久保存，關閉視窗後資料消失。建議每次結完帳後匯出 JSON 備份，下次可從備份還原。
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-primary btn-full" onclick="exportJSON()">📦 匯出 JSON 備份</button>
+      <button class="btn btn-secondary btn-full" onclick="exportCSV()">📄 匯出 CSV 報表</button>
+      <hr class="divider">
+      <label class="btn btn-secondary btn-full" style="cursor:pointer">
+        📥 從 JSON 還原備份
+        <input type="file" accept=".json" onchange="importJSON(event)" style="display:none">
+      </label>
+      <hr class="divider">
+      <button class="btn btn-danger btn-full" onclick="clearAllData()">🗑️ 清除所有資料</button>
+      <button class="btn btn-secondary btn-full" onclick="closeModal()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="loading-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:12px">
+  <div style="width:40px;height:40px;border:3px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+  <div style="color:#fff;font-size:14px;font-family:inherit">處理中...</div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<script>
+// ===== 設定 API 網址 =====
+const API_URL = 'https://script.google.com/macros/s/AKfycbyoRPwHj5aoDDVVBmZ8exhFGTIVJdeiYDTSiTTtB-6YrUzaw_D8J0ChSIMneYjlbIDiqw/exec';
+
+// ===== 狀態 =====
+let data = { people: [], events: [], expenses: [] };
+let personTypeSelected = 'core';
+let expenseTypeSelected = 'even';
+let toggleBday = true;
+let toggleGuest = true;
+
+// ===== API 工具函數 =====
+async function apiGet() {
+  const res = await fetch(API_URL + '?action=getAll');
+  return res.json();
+}
+
+async function apiPost(body) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+function setLoading(on) {
+  document.getElementById('loading-overlay').style.display = on ? 'flex' : 'none';
+}
+
+// ===== 初始化：從 Google Sheets 載入資料 =====
+async function loadData() {
+  setLoading(true);
+  try {
+    const result = await apiGet();
+    if (result.error) throw new Error(result.error);
+    data = result;
+    renderPeopleList();
+    renderEventList();
+  } catch(e) {
+    toast('❌ 載入失敗，請確認 API 網址是否正確');
+  }
+  setLoading(false);
+}
+
+// Tab switching
+function switchTab(tab) {
+  const tabs = ['people','event','expense','split'];
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i]===tab));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  if (tab === 'event') renderEventParticipantChips();
+  if (tab === 'expense') { populateExpenseEventSelect(); }
+  if (tab === 'split') { populateSplitEventSelect(); }
+}
+
+// Toast
+function toast(msg, dur=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ===== 人員 =====
+function selectPersonType(type) {
+  personTypeSelected = type;
+  document.getElementById('type-core').classList.toggle('selected', type==='core');
+  document.getElementById('type-guest').classList.toggle('selected', type==='guest');
+}
+
+async function addPerson() {
+  const nameEl = document.getElementById('person-name');
+  const name = nameEl.value.trim();
+  if (!name) return toast('⚠️ 請輸入姓名');
+  if (data.people.find(p => p.name === name)) return toast('⚠️ 此名字已存在');
+  setLoading(true);
+  const result = await apiPost({ action: 'addPerson', data: { name, type: personTypeSelected } });
+  if (result.error) { setLoading(false); return toast('❌ 新增失敗：' + result.error); }
+  data.people.push({ id: result.id, name, type: personTypeSelected });
+  nameEl.value = '';
+  renderPeopleList();
+  setLoading(false);
+  toast(`✅ 已新增：${name}`);
+}
+
+async function deletePerson(id) {
+  if (!confirm('確定刪除？')) return;
+  setLoading(true);
+  const result = await apiPost({ action: 'deletePerson', id });
+  if (result.error) { setLoading(false); return toast('❌ 刪除失敗：' + result.error); }
+  data.people = data.people.filter(p => p.id !== id);
+  renderPeopleList();
+  setLoading(false);
+}
+
+function renderPeopleList() {
+  const el = document.getElementById('people-list');
+  if (!data.people.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">👤</div><div class="empty-text">尚未新增任何人員</div></div>';
+    return;
+  }
+  el.innerHTML = data.people.map(p => `
+    <div class="list-item">
+      <div class="list-item-main">
+        <div class="list-item-name">
+          ${esc(p.name)}
+          <span class="badge badge-${p.type==='core'?'core':'guest'}">${p.type==='core'?'核心成員':'外部朋友'}</span>
+        </div>
+      </div>
+      <div class="list-item-actions">
+        <button class="btn btn-danger btn-sm" onclick="deletePerson('${p.id}')">刪除</button>
+      </div>
+    </div>`).join('');
+}
+
+// ===== 活動 =====
+function renderEventParticipantChips() {
+  const area = document.getElementById('event-participant-chips');
+  if (!data.people.length) {
+    area.innerHTML = '<span style="color:var(--text3);font-size:13px">請先在人員頁新增成員</span>';
+    document.getElementById('birthday-section').style.display = 'none';
+    return;
+  }
+  area.innerHTML = data.people.map(p => `
+    <div class="chip ${selectedParticipants.has(p.id)?'selected':''}" onclick="toggleParticipant('${p.id}')">
+      ${esc(p.name)}
+      <span class="badge badge-${p.type==='core'?'core':'guest'}" style="margin-left:4px">${p.type==='core'?'核心':'外部'}</span>
+    </div>`).join('');
+  renderBirthdayChips();
+}
+
+function toggleParticipant(pid) {
+  if (selectedParticipants.has(pid)) { selectedParticipants.delete(pid); selectedBirthdays.delete(pid); }
+  else selectedParticipants.add(pid);
+  renderEventParticipantChips();
+}
+
+function renderBirthdayChips() {
+  const section = document.getElementById('birthday-section');
+  const area = document.getElementById('birthday-chips');
+  const participants = data.people.filter(p => selectedParticipants.has(p.id));
+  if (!participants.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  area.innerHTML = participants.map(p => `
+    <div class="chip bday-chip ${selectedBirthdays.has(p.id)?'selected':''}" onclick="toggleBirthday('${p.id}')">
+      🎂 ${esc(p.name)}
+    </div>`).join('');
+}
+
+function toggleBirthday(pid) {
+  if (selectedBirthdays.has(pid)) selectedBirthdays.delete(pid);
+  else selectedBirthdays.add(pid);
+  renderBirthdayChips();
+}
+
+async function addEvent() {
+  const name = document.getElementById('event-name').value.trim();
+  const date = document.getElementById('event-date').value;
+  if (!name) return toast('⚠️ 請輸入活動名稱');
+  if (!selectedParticipants.size) return toast('⚠️ 請選擇至少一位參與人員');
+  setLoading(true);
+  const eventData = { name, date, participants: [...selectedParticipants], birthdays: [...selectedBirthdays] };
+  const result = await apiPost({ action: 'addEvent', data: eventData });
+  if (result.error) { setLoading(false); return toast('❌ 新增失敗：' + result.error); }
+  data.events.push({ id: result.id, ...eventData });
+  document.getElementById('event-name').value = '';
+  selectedParticipants.clear();
+  selectedBirthdays.clear();
+  renderEventParticipantChips();
+  renderEventList();
+  setLoading(false);
+  toast('✅ 活動已新增！');
+}
+
+async function deleteEvent(id) {
+  if (!confirm('確定刪除此活動及其所有費用記錄？')) return;
+  setLoading(true);
+  const result = await apiPost({ action: 'deleteEvent', id });
+  if (result.error) { setLoading(false); return toast('❌ 刪除失敗：' + result.error); }
+  data.events = data.events.filter(e => e.id !== id);
+  data.expenses = data.expenses.filter(e => e.eventId !== id);
+  renderEventList();
+  setLoading(false);
+}
+
+function renderEventList() {
+  const el = document.getElementById('event-list');
+  if (!data.events.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🎉</div><div class="empty-text">尚未新增任何活動</div></div>';
+    return;
+  }
+  el.innerHTML = data.events.map(ev => {
+    const members = ev.participants.map(pid => data.people.find(x=>x.id===pid)?.name||'?').join('、');
+    const bdays = ev.birthdays.map(pid => data.people.find(x=>x.id===pid)?.name||'?');
+    const evExps = data.expenses.filter(e=>e.eventId===ev.id);
+    const expCount = evExps.length;
+    const totalAmt = evExps.reduce((s,ex) => s + (ex.type==='even' ? ex.amount : ex.items.reduce((a,i)=>a+i.amount,0)), 0);
+    return `<div class="list-item">
+      <div class="list-item-main">
+        <div class="list-item-name">${esc(ev.name)} ${bdays.length?'🎂':''}</div>
+        <div class="list-item-sub">
+          ${ev.date?ev.date+'・':''}${members}
+          ${bdays.length?'・壽星：'+bdays.map(n=>esc(n)).join('、'):''}
+        </div>
+        ${expCount ? `<div class="list-item-amount">${expCount} 筆費用・共 <span>NT$ ${fmtAmt(totalAmt)}</span></div>` : ''}
+      </div>
+      <div class="list-item-actions">
+        <button class="btn btn-danger btn-sm" onclick="deleteEvent('${ev.id}')">刪除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== 記帳 =====
+function populateExpenseEventSelect() {
+  const sel = document.getElementById('expense-event-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— 請選擇活動 —</option>' +
+    data.events.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  if (cur && data.events.find(e=>e.id===cur)) sel.value = cur;
+  onExpenseEventChange();
+}
+
+function onExpenseEventChange() {
+  const eid = document.getElementById('expense-event-select').value;
+  document.getElementById('expense-form-area').style.display = eid ? '' : 'none';
+  if (eid) {
+    renderExpensePayerOptions();
+    renderCustomAmountRows();
+    renderExpenseList();
+  }
+}
+
+function selectExpenseType(t) {
+  expenseTypeSelected = t;
+  document.getElementById('etype-even').classList.toggle('active', t==='even');
+  document.getElementById('etype-custom').classList.toggle('active', t==='custom');
+  document.getElementById('even-section').style.display = t==='even'?'':'none';
+  document.getElementById('custom-section').style.display = t==='custom'?'':'none';
+}
+
+function toggleOpt(opt) {
+  if (opt==='bday') { toggleBday=!toggleBday; document.getElementById('toggle-bday').classList.toggle('on',toggleBday); }
+  if (opt==='guest') { toggleGuest=!toggleGuest; document.getElementById('toggle-guest').classList.toggle('on',toggleGuest); }
+}
+
+function renderExpensePayerOptions() {
+  const eid = document.getElementById('expense-event-select').value;
+  const ev = data.events.find(e=>e.id===eid);
+  if (!ev) return;
+  const opts = ev.participants.map(pid => {
+    const p = data.people.find(x=>x.id===pid);
+    return p ? `<option value="${p.id}">${esc(p.name)}</option>` : '';
+  }).join('');
+  document.getElementById('expense-payer').innerHTML = opts;
+  document.getElementById('expense-payer-custom').innerHTML = opts;
+}
+
+function renderCustomAmountRows() {
+  const eid = document.getElementById('expense-event-select').value;
+  const ev = data.events.find(e=>e.id===eid);
+  if (!ev) return;
+  const area = document.getElementById('custom-amount-rows');
+  area.innerHTML = ev.participants.map(pid => {
+    const p = data.people.find(x=>x.id===pid);
+    if (!p) return '';
+    const isBday = ev.birthdays.includes(pid);
+    const isGuest = p.type === 'guest';
+    return `<div class="amount-row">
+      <span class="amount-name">${esc(p.name)}</span>
+      <div class="amount-badges">
+        ${isBday?'<span class="badge badge-bday">壽星</span>':''}
+        ${isGuest?'<span class="badge badge-guest">外部</span>':''}
+      </div>
+      <div class="amount-input-wrap">
+        <input type="number" placeholder="0" min="0" data-pid="${pid}" oninput="updateCustomTotal()">
+      </div>
+    </div>`;
+  }).join('');
+  updateCustomTotal();
+}
+
+function updateCustomTotal() {
+  let total = 0;
+  document.querySelectorAll('#custom-amount-rows input').forEach(inp => { total += parseFloat(inp.value)||0; });
+  document.getElementById('custom-total').textContent = 'NT$ ' + fmtAmt(total);
+}
+
+async function addExpense() {
+  const eid = document.getElementById('expense-event-select').value;
+  if (!eid) return toast('⚠️ 請選擇活動');
+  const note = document.getElementById('expense-note').value.trim() || '費用';
+  let expObj;
+
+  if (expenseTypeSelected === 'even') {
+    const amount = parseFloat(document.getElementById('expense-amount').value);
+    if (!amount || amount <= 0) return toast('⚠️ 請輸入正確金額');
+    const payer = document.getElementById('expense-payer').value;
+    expObj = { eventId: eid, note, type: 'even', payer, amount, bdayExempt: toggleBday, guestPay: toggleGuest };
+  } else {
+    const payer = document.getElementById('expense-payer-custom').value;
+    const items = [];
+    document.querySelectorAll('#custom-amount-rows input').forEach(inp => {
+      items.push({ pid: inp.dataset.pid, amount: parseFloat(inp.value)||0 });
+    });
+    const total = items.reduce((s,i)=>s+i.amount,0);
+    if (total <= 0) return toast('⚠️ 請輸入各人金額');
+    expObj = { eventId: eid, note, type: 'custom', payer, items };
+  }
+
+  setLoading(true);
+  const result = await apiPost({ action: 'addExpense', data: expObj });
+  if (result.error) { setLoading(false); return toast('❌ 新增失敗：' + result.error); }
+  data.expenses.push({ id: result.id, ...expObj });
+
+  if (expenseTypeSelected === 'even') {
+    document.getElementById('expense-amount').value = '';
+  } else {
+    document.querySelectorAll('#custom-amount-rows input').forEach(inp => inp.value='');
+    updateCustomTotal();
+  }
+  document.getElementById('expense-note').value = '';
+  renderExpenseList();
+  renderEventList();
+  setLoading(false);
+  toast('✅ 費用已記錄！');
+}
+
+async function deleteExpense(id) {
+  data.expenses = data.expenses.filter(e=>e.id!==id);
+  setLoading(true);
+  await apiPost({ action: 'deleteExpense', id });
+  renderExpenseList();
+  renderEventList();
+  setLoading(false);
+}
+// Tab switching
+function switchTab(tab) {
+  const tabs = ['people','event','expense','split'];
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i]===tab));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  if (tab === 'event') renderEventParticipantChips();
+  if (tab === 'expense') { populateExpenseEventSelect(); }
+  if (tab === 'split') { populateSplitEventSelect(); }
+}
+
+// Toast
+function toast(msg, dur=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ===== 人員 =====
+function selectPersonType(type) {
+  personTypeSelected = type;
+  document.getElementById('type-core').classList.toggle('selected', type==='core');
+  document.getElementById('type-guest').classList.toggle('selected', type==='guest');
+}
+
+function addPerson() {
+  const nameEl = document.getElementById('person-name');
+  const name = nameEl.value.trim();
+  if (!name) return toast('⚠️ 請輸入姓名');
+  if (data.people.find(p => p.name === name)) return toast('⚠️ 此名字已存在');
+  data.people.push({ id: uid(), name, type: personTypeSelected });
+  nameEl.value = '';
+  renderPeopleList();
+  toast(`✅ 已新增：${name}`);
+}
+
+function deletePerson(id) {
+  if (!confirm('確定刪除？')) return;
+  data.people = data.people.filter(p => p.id !== id);
+  renderPeopleList();
+}
+
+function renderPeopleList() {
+  const el = document.getElementById('people-list');
+  if (!data.people.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">👤</div><div class="empty-text">尚未新增任何人員</div></div>';
+    return;
+  }
+  el.innerHTML = data.people.map(p => `
+    <div class="list-item">
+      <div class="list-item-main">
+        <div class="list-item-name">
+          ${esc(p.name)}
+          <span class="badge badge-${p.type==='core'?'core':'guest'}">${p.type==='core'?'核心成員':'外部朋友'}</span>
+        </div>
+      </div>
+      <div class="list-item-actions">
+        <button class="btn btn-danger btn-sm" onclick="deletePerson('${p.id}')">刪除</button>
+      </div>
+    </div>`).join('');
+}
+
+// ===== 活動 =====
+let selectedParticipants = new Set();
+let selectedBirthdays = new Set();
+
+function renderEventParticipantChips() {
+  const area = document.getElementById('event-participant-chips');
+  if (!data.people.length) {
+    area.innerHTML = '<span style="color:var(--text3);font-size:13px">請先在人員頁新增成員</span>';
+    document.getElementById('birthday-section').style.display = 'none';
+    return;
+  }
+  area.innerHTML = data.people.map(p => `
+    <div class="chip ${selectedParticipants.has(p.id)?'selected':''}" onclick="toggleParticipant('${p.id}')">
+      ${esc(p.name)}<span style="font-size:10px;opacity:0.65">${p.type==='core'?'核心':'外部'}</span>
+    </div>`).join('');
+  renderBirthdayChips();
+}
+
+function toggleParticipant(pid) {
+  if (selectedParticipants.has(pid)) {
+    selectedParticipants.delete(pid);
+    selectedBirthdays.delete(pid);
+  } else {
+    selectedParticipants.add(pid);
+  }
+  renderEventParticipantChips();
+}
+
+function renderBirthdayChips() {
+  const section = document.getElementById('birthday-section');
+  const area = document.getElementById('event-birthday-chips');
+  const participants = data.people.filter(p => selectedParticipants.has(p.id));
+  if (!participants.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  area.innerHTML = participants.map(p => `
+    <div class="chip bday-chip ${selectedBirthdays.has(p.id)?'selected':''}" onclick="toggleBirthday('${p.id}')">
+      🎂 ${esc(p.name)}
+    </div>`).join('');
+}
+
+function toggleBirthday(pid) {
+  if (selectedBirthdays.has(pid)) selectedBirthdays.delete(pid);
+  else selectedBirthdays.add(pid);
+  renderBirthdayChips();
+}
+
+function addEvent() {
+  const name = document.getElementById('event-name').value.trim();
+  const date = document.getElementById('event-date').value;
+  if (!name) return toast('⚠️ 請輸入活動名稱');
+  if (!selectedParticipants.size) return toast('⚠️ 請選擇至少一位參與人員');
+  data.events.push({
+    id: uid(), name, date,
+    participants: [...selectedParticipants],
+    birthdays: [...selectedBirthdays]
+  });
+  document.getElementById('event-name').value = '';
+  selectedParticipants.clear();
+  selectedBirthdays.clear();
+  renderEventParticipantChips();
+  renderEventList();
+  toast('✅ 活動已新增！');
+}
+
+function deleteEvent(id) {
+  if (!confirm('確定刪除此活動及其所有費用記錄？')) return;
+  data.events = data.events.filter(e => e.id !== id);
+  data.expenses = data.expenses.filter(e => e.eventId !== id);
+  renderEventList();
+}
+
+function renderEventList() {
+  const el = document.getElementById('event-list');
+  if (!data.events.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🎉</div><div class="empty-text">尚未新增任何活動</div></div>';
+    return;
+  }
+  el.innerHTML = data.events.map(ev => {
+    const members = ev.participants.map(pid => data.people.find(x=>x.id===pid)?.name||'?').join('、');
+    const bdays = ev.birthdays.map(pid => data.people.find(x=>x.id===pid)?.name||'?');
+    const evExps = data.expenses.filter(e=>e.eventId===ev.id);
+    const expCount = evExps.length;
+    const totalAmt = evExps.reduce((s,ex) => s + (ex.type==='even' ? ex.amount : ex.items.reduce((a,i)=>a+i.amount,0)), 0);
+    return `<div class="list-item">
+      <div class="list-item-main">
+        <div class="list-item-name">${esc(ev.name)} ${bdays.length?'🎂':''}</div>
+        <div class="list-item-sub">
+          ${ev.date?ev.date+'・':''}${members}
+          ${bdays.length?'・壽星：'+bdays.map(n=>esc(n)).join('、'):''}
+        </div>
+        ${expCount ? `<div class="list-item-amount">${expCount} 筆費用・共 <span>NT$ ${fmtAmt(totalAmt)}</span></div>` : ''}
+      </div>
+      <div class="list-item-actions">
+        <button class="btn btn-danger btn-sm" onclick="deleteEvent('${ev.id}')">刪除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== 記帳 =====
+function populateExpenseEventSelect() {
+  const sel = document.getElementById('expense-event-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— 請選擇活動 —</option>' +
+    data.events.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  if (cur && data.events.find(e=>e.id===cur)) sel.value = cur;
+  onExpenseEventChange();
+}
+
+function onExpenseEventChange() {
+  const eid = document.getElementById('expense-event-select').value;
+  document.getElementById('expense-form-area').style.display = eid ? '' : 'none';
+  if (eid) {
+    renderExpensePayerOptions();
+    renderCustomAmountRows();
+    renderExpenseList();
+  }
+}
+
+function selectExpenseType(t) {
+  expenseTypeSelected = t;
+  document.getElementById('etype-even').classList.toggle('active', t==='even');
+  document.getElementById('etype-custom').classList.toggle('active', t==='custom');
+  document.getElementById('even-section').style.display = t==='even'?'':'none';
+  document.getElementById('custom-section').style.display = t==='custom'?'':'none';
+}
+
+function toggleOpt(opt) {
+  if (opt==='bday') { toggleBday=!toggleBday; document.getElementById('toggle-bday').classList.toggle('on',toggleBday); }
+  if (opt==='guest') { toggleGuest=!toggleGuest; document.getElementById('toggle-guest').classList.toggle('on',toggleGuest); }
+}
+
+function renderExpensePayerOptions() {
+  const eid = document.getElementById('expense-event-select').value;
+  const ev = data.events.find(e=>e.id===eid);
+  if (!ev) return;
+  const opts = ev.participants.map(pid => {
+    const p = data.people.find(x=>x.id===pid);
+    return p ? `<option value="${p.id}">${esc(p.name)}</option>` : '';
+  }).join('');
+  document.getElementById('expense-payer').innerHTML = opts;
+  document.getElementById('expense-payer-custom').innerHTML = opts;
+}
+
+function renderCustomAmountRows() {
+  const eid = document.getElementById('expense-event-select').value;
+  const ev = data.events.find(e=>e.id===eid);
+  if (!ev) return;
+  const area = document.getElementById('custom-amount-rows');
+  area.innerHTML = ev.participants.map(pid => {
+    const p = data.people.find(x=>x.id===pid);
+    if (!p) return '';
+    const isBday = ev.birthdays.includes(pid);
+    const isGuest = p.type === 'guest';
+    return `<div class="amount-row">
+      <span class="amount-name">${esc(p.name)}</span>
+      <div class="amount-badges">
+        ${isBday?'<span class="badge badge-bday">壽星</span>':''}
+        ${isGuest?'<span class="badge badge-guest">外部</span>':''}
+      </div>
+      <div class="amount-input-wrap">
+        <input type="number" placeholder="0" min="0" data-pid="${pid}" oninput="updateCustomTotal()">
+      </div>
+    </div>`;
+  }).join('');
+  updateCustomTotal();
+}
+
+function updateCustomTotal() {
+  let total = 0;
+  document.querySelectorAll('#custom-amount-rows input').forEach(inp => { total += parseFloat(inp.value)||0; });
+  document.getElementById('custom-total').textContent = 'NT$ ' + fmtAmt(total);
+}
+
+function addExpense() {
+  const eid = document.getElementById('expense-event-select').value;
+  if (!eid) return toast('⚠️ 請選擇活動');
+  const note = document.getElementById('expense-note').value.trim() || '費用';
+
+  if (expenseTypeSelected === 'even') {
+    const amount = parseFloat(document.getElementById('expense-amount').value);
+    if (!amount || amount <= 0) return toast('⚠️ 請輸入正確金額');
+    const payer = document.getElementById('expense-payer').value;
+    data.expenses.push({ id: uid(), eventId: eid, note, type: 'even', payer, amount, bdayExempt: toggleBday, guestPay: toggleGuest });
+    document.getElementById('expense-amount').value = '';
+  } else {
+    const payer = document.getElementById('expense-payer-custom').value;
+    const items = [];
+    document.querySelectorAll('#custom-amount-rows input').forEach(inp => {
+      items.push({ pid: inp.dataset.pid, amount: parseFloat(inp.value)||0 });
+    });
+    const total = items.reduce((s,i)=>s+i.amount,0);
+    if (total <= 0) return toast('⚠️ 請輸入各人金額');
+    data.expenses.push({ id: uid(), eventId: eid, note, type: 'custom', payer, items });
+    document.querySelectorAll('#custom-amount-rows input').forEach(inp => inp.value='');
+    updateCustomTotal();
+  }
+  document.getElementById('expense-note').value = '';
+  renderExpenseList();
+  renderEventList();
+  toast('✅ 費用已記錄！');
+}
+
+function deleteExpense(id) {
+  data.expenses = data.expenses.filter(e=>e.id!==id);
+  renderExpenseList();
+  renderEventList();
+}
+
+function renderExpenseList() {
+  const eid = document.getElementById('expense-event-select').value;
+  const area = document.getElementById('expense-list-area');
+  const exps = data.expenses.filter(e=>e.eventId===eid);
+  if (!exps.length) {
+    area.innerHTML = '<div class="empty"><div class="empty-icon">💳</div><div class="empty-text">尚無費用記錄</div></div>';
+    return;
+  }
+  area.innerHTML = exps.map(ex => {
+    const payerName = data.people.find(p=>p.id===ex.payer)?.name||'?';
+    let sub = '';
+    if (ex.type==='even') {
+      sub = `墊付：${esc(payerName)}・NT$ ${fmtAmt(ex.amount)}・均分`;
+      if (!ex.bdayExempt) sub += '・壽星需付';
+      if (!ex.guestPay) sub += '・外部免付';
+    } else {
+      const total = ex.items.reduce((s,i)=>s+i.amount,0);
+      sub = `墊付：${esc(payerName)}・NT$ ${fmtAmt(total)}・各自金額`;
+    }
+    return `<div class="list-item">
+      <div class="list-item-main">
+        <div class="list-item-name">${esc(ex.note)}</div>
+        <div class="list-item-sub">${sub}</div>
+      </div>
+      <div class="list-item-actions">
+        <button class="btn btn-danger btn-sm" onclick="deleteExpense('${ex.id}')">刪除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== 分帳計算 =====
+const paidTransfers = new Set();
+
+function togglePaid(key, btn) {
+  if (paidTransfers.has(key)) {
+    paidTransfers.delete(key);
+    btn.textContent = '標記已付清';
+    btn.classList.remove('is-paid');
+    btn.closest('.result-row').classList.remove('paid');
+  } else {
+    paidTransfers.add(key);
+    btn.textContent = '✓ 已付清';
+    btn.classList.add('is-paid');
+    btn.closest('.result-row').classList.add('paid');
+  }
+}
+
+function populateSplitEventSelect() {
+  const sel = document.getElementById('split-event-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— 請選擇活動 —</option>' +
+    data.events.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  if (cur && data.events.find(e=>e.id===cur)) { sel.value = cur; calcSplit(); }
+}
+
+function calcSplit() {
+  const eid = document.getElementById('split-event-select').value;
+  const area = document.getElementById('split-result-area');
+  if (!eid) { area.innerHTML = ''; return; }
+  const ev = data.events.find(e=>e.id===eid);
+  if (!ev) return;
+  const exps = data.expenses.filter(e=>e.eventId===eid);
+  if (!exps.length) {
+    area.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">📊</div><div class="empty-text">此活動尚無費用記錄</div></div></div>';
+    return;
+  }
+
+  // balance: pid -> net (positive = receive, negative = owe)
+  const balance = {};
+  ev.participants.forEach(pid => balance[pid] = 0);
+
+  exps.forEach(ex => {
+    if (ex.type === 'even') {
+      const total = ex.amount;
+      const bdaySet = new Set(ex.bdayExempt ? ev.birthdays : []);
+
+      // Step 1: 外部朋友免攤 → 完全不參與這筆；外部朋友分攤 → 付自己份但不攤壽星
+      // Step 2: 壽星免付 → 壽星不付，份額由「有付款的核心成員」承擔
+      // Step 3: 壽星也付 → 壽星付自己份，但壽星份仍只能由核心成員承擔（外部不攤壽星）
+
+      // 誰「出現在分母」（即參與計算每人基本份額）
+      const allParticipants = ev.participants.filter(pid => {
+        const p = data.people.find(x=>x.id===pid);
+        if (!p) return false;
+        if (!ex.guestPay && p.type==='guest') return false; // 外部免攤 → 完全排除
+        return true;
+      });
+
+      // 實際需要付款的人（壽星免付時，壽星不付）
+      const actualPayers = allParticipants.filter(pid => !bdaySet.has(pid));
+
+      // 核心付款者（用來承擔壽星份額）
+      const coreActualPayers = actualPayers.filter(pid => {
+        const p = data.people.find(x=>x.id===pid);
+        return p && p.type === 'core';
+      });
+
+      if (!allParticipants.length) { balance[ex.payer] = (balance[ex.payer]||0)+total; return; }
+
+      // Payer gets credited total
+      balance[ex.payer] = (balance[ex.payer]||0) + total;
+
+      // 計算每人基本份額（以 allParticipants 為分母，含壽星人數）
+      const perHead = total / allParticipants.length;
+      const bdayTotal = [...bdaySet].filter(pid => allParticipants.includes(pid)).length * perHead;
+      const nonBdayTotal = total - bdayTotal;
+
+      // 外部付款者：只付自己那份（perHead），不分攤壽星
+      const externalActualPayers = actualPayers.filter(pid => {
+        const p = data.people.find(x=>x.id===pid);
+        return p && p.type === 'guest';
+      });
+      externalActualPayers.forEach(pid => {
+        balance[pid] = (balance[pid]||0) - Math.round(perHead);
+      });
+
+      // 核心付款者：付自己份 + 平分壽星份
+      const externalTotal = externalActualPayers.length * perHead;
+      const coreTotalOwed = nonBdayTotal - externalTotal + bdayTotal; // 自己份(扣外部) + 壽星份
+      if (coreActualPayers.length > 0) {
+        const coreBase = Math.floor(coreTotalOwed / coreActualPayers.length);
+        const coreRem = Math.round(coreTotalOwed) - coreBase * coreActualPayers.length;
+        coreActualPayers.forEach((pid, i) => {
+          balance[pid] = (balance[pid]||0) - (coreBase + (i < coreRem ? 1 : 0));
+        });
+      }
+    } else {
+      // custom
+      const total = ex.items.reduce((s,i)=>s+i.amount,0);
+      balance[ex.payer] = (balance[ex.payer]||0) + total;
+      // 各自金額型：壽星份由「核心非壽星」分攤；外部朋友只付自己份，不攤壽星
+      const coreNonBdayPids = ev.participants.filter(pid => {
+        const p = data.people.find(x=>x.id===pid);
+        return p && p.type==='core' && !ev.birthdays.includes(pid);
+      });
+      let bdayTotal = 0;
+      ex.items.forEach(item => {
+        const isBday = ev.birthdays.includes(item.pid);
+        if (isBday) {
+          // 壽星：記錄壽星份，待分攤
+          bdayTotal += item.amount;
+        } else {
+          // 非壽星：付自己那份
+          balance[item.pid] = (balance[item.pid]||0) - item.amount;
+        }
+      });
+      // 壽星份只由核心非壽星成員平分（外部朋友不幫忙攤）
+      if (bdayTotal > 0 && coreNonBdayPids.length > 0) {
+        const base = Math.floor(bdayTotal / coreNonBdayPids.length);
+        const rem = bdayTotal - base * coreNonBdayPids.length;
+        coreNonBdayPids.forEach((pid, i) => {
+          balance[pid] = (balance[pid]||0) - (base + (i < rem ? 1 : 0));
+        });
+      }
+    }
+  });
+
+  // Minimum transactions algorithm
+  const cred = [], debt = [];
+  Object.entries(balance).forEach(([pid, amt]) => {
+    const r = Math.round(amt);
+    if (r > 0) cred.push({ pid, amt: r });
+    else if (r < 0) debt.push({ pid, amt: -r });
+  });
+  cred.sort((a,b)=>b.amt-a.amt);
+  debt.sort((a,b)=>b.amt-a.amt);
+
+  const transfers = [];
+  let ci=0, di=0;
+  const c = cred.map(x=>({...x})), d = debt.map(x=>({...x}));
+  while (ci<c.length && di<d.length) {
+    const amt = Math.min(c[ci].amt, d[di].amt);
+    if (amt > 0) transfers.push({ from: d[di].pid, to: c[ci].pid, amount: amt });
+    c[ci].amt -= amt; d[di].amt -= amt;
+    if (c[ci].amt===0) ci++;
+    if (d[di].amt===0) di++;
+  }
+
+  // Per-person summary
+  const personSummary = ev.participants.map(pid => {
+    const p = data.people.find(x=>x.id===pid);
+    return { pid, name: p?.name||'?', type: p?.type||'core', net: Math.round(balance[pid]||0) };
+  });
+
+  let html = '';
+
+  // Transfer instructions
+  html += '<div class="card"><div class="card-title">轉帳指示</div>';
+  if (!transfers.length) {
+    html += '<div style="text-align:center;padding:20px 0;color:var(--accent);font-weight:500;font-size:15px">✅ 無需轉帳，已平帳！</div>';
+  } else {
+    html += transfers.map(t => {
+      const from = data.people.find(p=>p.id===t.from)?.name||'?';
+      const to = data.people.find(p=>p.id===t.to)?.name||'?';
+      const key = t.from+':'+t.to+':'+t.amount;
+      const isPaid = paidTransfers.has(key);
+      return `<div class="result-row ${isPaid?'paid':''}">
+        <div>
+          <div class="result-from">${esc(from)} 付給</div>
+          <div class="result-to">${esc(to)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <div class="result-amount">NT$ ${fmtAmt(t.amount)}</div>
+          <button class="btn-paid ${isPaid?'is-paid':''}" onclick="togglePaid('${key}',this)">${isPaid?'✓ 已付清':'標記已付清'}</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  html += '</div>';
+
+  // Per-person detail
+  html += '<div class="card"><div class="card-title">個人明細</div>';
+  html += '<table class="summary-table"><thead><tr><th>姓名</th><th>身份</th><th style="text-align:right">應付 / 應收</th></tr></thead><tbody>';
+  personSummary.forEach(ps => {
+    const netText = ps.net>0 ? `<span style="color:var(--accent);font-family:'DM Mono',monospace">↑ NT$ ${fmtAmt(ps.net)}</span>`
+      : ps.net<0 ? `<span style="color:var(--danger);font-family:'DM Mono',monospace">↓ NT$ ${fmtAmt(-ps.net)}</span>`
+      : `<span style="color:var(--text3)">已平帳</span>`;
+    const badge = `<span class="badge badge-${ps.type==='core'?'core':'guest'}">${ps.type==='core'?'核心':'外部'}</span>`;
+    html += `<tr><td style="font-weight:500">${esc(ps.name)}</td><td>${badge}</td><td style="text-align:right">${netText}</td></tr>`;
+  });
+  html += '</tbody></table></div>';
+
+  area.innerHTML = html;
+  toast('💾 計算完成！記得到備份頁匯出儲存', 3500);
+}
+
+// ===== 備份 =====
+function showBackupModal() { document.getElementById('backup-modal').classList.add('open'); }
+function closeModal() { document.getElementById('backup-modal').classList.remove('open'); }
+document.getElementById('backup-modal').addEventListener('click', e => {
+  if (e.target.id==='backup-modal') closeModal();
+});
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  dl(blob, '分帳備份_'+today()+'.json');
+  toast('✅ JSON 備份已下載！');
+}
+
+function exportCSV() {
+  let csv = '\uFEFF';
+  csv += '=== 活動清單 ===\n活動名稱,日期,參與人員,壽星\n';
+  data.events.forEach(ev => {
+    const members = ev.participants.map(pid=>data.people.find(p=>p.id===pid)?.name||'').join('・');
+    const bdays = ev.birthdays.map(pid=>data.people.find(p=>p.id===pid)?.name||'').join('・');
+    csv += `"${ev.name}","${ev.date||''}","${members}","${bdays}"\n`;
+  });
+  csv += '\n=== 費用清單 ===\n活動,費用說明,類型,金額,墊付人\n';
+  data.expenses.forEach(ex => {
+    const evName = data.events.find(e=>e.id===ex.eventId)?.name||'';
+    const payerName = data.people.find(p=>p.id===ex.payer)?.name||'';
+    const amt = ex.type==='even' ? ex.amount : ex.items.reduce((s,i)=>s+i.amount,0);
+    csv += `"${evName}","${ex.note}","${ex.type==='even'?'均分':'各自金額'}","${amt}","${payerName}"\n`;
+  });
+  dl(new Blob([csv],{type:'text/csv;charset=utf-8'}), '分帳報表_'+today()+'.csv');
+  toast('✅ CSV 報表已下載！');
+}
+
+function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!imported.people || !imported.events || !imported.expenses) throw new Error('格式錯誤');
+      data = imported;
+      const allIds = [...data.people,...data.events,...data.expenses].map(x=>parseInt(x.id)||0);
+      _id = (Math.max(0,...allIds)||0)+1;
+      renderPeopleList(); renderEventList();
+      toast('✅ 備份還原成功！'); closeModal();
+    } catch { toast('❌ 還原失敗，請確認檔案格式'); }
+  };
+  reader.readAsText(file);
+  event.target.value='';
+}
+
+async function clearAllData() {
+  if (!confirm('確定清除所有資料？此操作無法復原，Google Sheets 的資料也會一併清除。')) return;
+  setLoading(true);
+  for (const p of [...data.people]) await apiPost({ action: 'deletePerson', id: p.id });
+  for (const ev of [...data.events]) await apiPost({ action: 'deleteEvent', id: ev.id });
+  data = {people:[],events:[],expenses:[]};
+  renderPeopleList(); renderEventList(); closeModal();
+  setLoading(false);
+  toast('資料已清除');
+}
+
+// ===== Helpers =====
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtAmt(n) { return Math.round(n).toLocaleString('zh-TW'); }
+function today() { return new Date().toISOString().slice(0,10); }
+function dl(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=filename; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+// Init
+document.getElementById('event-date').value = today();
+loadData();
+</script>
+</body>
+</html>
