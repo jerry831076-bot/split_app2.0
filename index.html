@@ -817,7 +817,7 @@ function addPerson() {
   const name = nameEl.value.trim();
   if (!name) return toast('⚠️ 請輸入姓名');
   if (data.people.find(p => p.name === name)) return toast('⚠️ 此名字已存在');
-  data.people.push({ id: uid(), name, type: personTypeSelected });
+  data.people.push({ id: result.id, name, type: personTypeSelected });
   nameEl.value = '';
   renderPeopleList();
   toast(`✅ 已新增：${name}`);
@@ -900,16 +900,17 @@ function addEvent() {
   const date = document.getElementById('event-date').value;
   if (!name) return toast('⚠️ 請輸入活動名稱');
   if (!selectedParticipants.size) return toast('⚠️ 請選擇至少一位參與人員');
-  data.events.push({
-    id: uid(), name, date,
-    participants: [...selectedParticipants],
-    birthdays: [...selectedBirthdays]
-  });
+  setLoading(true);
+  const eventData = { name, date, participants: [...selectedParticipants], birthdays: [...selectedBirthdays] };
+  const result = await apiPost({ action: 'addEvent', data: eventData });
+  if (result.error) { setLoading(false); return toast('❌ 新增失敗：' + result.error); }
+  data.events.push({ id: result.id, ...eventData });
   document.getElementById('event-name').value = '';
   selectedParticipants.clear();
   selectedBirthdays.clear();
   renderEventParticipantChips();
   renderEventList();
+  setLoading(false);
   toast('✅ 活動已新增！');
 }
 
@@ -1032,7 +1033,7 @@ function addExpense() {
     const amount = parseFloat(document.getElementById('expense-amount').value);
     if (!amount || amount <= 0) return toast('⚠️ 請輸入正確金額');
     const payer = document.getElementById('expense-payer').value;
-    data.expenses.push({ id: uid(), eventId: eid, note, type: 'even', payer, amount, bdayExempt: toggleBday, guestPay: toggleGuest });
+    data.expenses.push({ id: result.id, eventId: eid, note, type: 'even', payer, amount, bdayExempt: toggleBday, guestPay: toggleGuest });
     document.getElementById('expense-amount').value = '';
   } else {
     const payer = document.getElementById('expense-payer-custom').value;
@@ -1042,7 +1043,7 @@ function addExpense() {
     });
     const total = items.reduce((s,i)=>s+i.amount,0);
     if (total <= 0) return toast('⚠️ 請輸入各人金額');
-    data.expenses.push({ id: uid(), eventId: eid, note, type: 'custom', payer, items });
+    data.expenses.push({ id: result.id, eventId: eid, note, type: 'custom', payer, items });
     document.querySelectorAll('#custom-amount-rows input').forEach(inp => inp.value='');
     updateCustomTotal();
   }
