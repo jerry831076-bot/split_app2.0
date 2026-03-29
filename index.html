@@ -488,6 +488,8 @@ async function loadData() {
     data = result;
     renderPeopleList();
     renderEventList();
+    renderEventParticipantChips();
+    populateExpenseEventSelect();
   } catch(e) {
     toast('❌ 載入失敗，請確認 API 網址是否正確');
   }
