@@ -456,6 +456,9 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbyoRPwHj5aoDDVVBmZ8exhF
 
 // ===== 狀態 =====
 let data = { people: [], events: [], expenses: [] };
+// 在 let data = ... 下方新增
+let selectedParticipants = new Set();
+let selectedBirthdays = new Set();
 let personTypeSelected = 'core';
 let expenseTypeSelected = 'even';
 let toggleBday = true;
