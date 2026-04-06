@@ -649,7 +649,7 @@ async function deleteEvent(id) {
   const result = await apiPost({ action: 'deleteEvent', id });
   if (result.error) { setLoading(false); return toast('❌ 刪除失敗：' + result.error); }
   data.events = data.events.filter(e => e.id !== id);
-  data.expenses = data.expenses.filter(e => e.eventId !== id);
+  data.expenses = data.expenses.filter(e => String(e.eventId) !== String(id));
   renderEventList();
   setLoading(false);
 }
@@ -663,7 +663,7 @@ function renderEventList() {
   el.innerHTML = data.events.map(ev => {
     const members = ev.participants.map(pid => data.people.find(x=>x.id===pid)?.name||'?').join('、');
     const bdays = ev.birthdays.map(pid => data.people.find(x=>x.id===pid)?.name||'?');
-    const evExps = data.expenses.filter(e=>e.eventId===ev.id);
+    const evExps = data.expenses.filter(e=>String(e.eventId)===String(ev.id));
     const expCount = evExps.length;
     const totalAmt = evExps.reduce((s,ex) => s + (ex.type==='even' ? ex.amount : ex.items.reduce((a,i)=>a+i.amount,0)), 0);
     return `<div class="list-item">
@@ -735,7 +735,7 @@ function renderCustomAmountRows() {
   area.innerHTML = ev.participants.map(pid => {
     const p = data.people.find(x=>x.id===pid);
     if (!p) return '';
-    const isBday = ev.birthdays.includes(pid);
+    const isBday = ev.birthdays.map(String).includes(String(pid));
     const isGuest = p.type === 'guest';
     return `<div class="amount-row">
       <span class="amount-name">${esc(p.name)}</span>
@@ -809,7 +809,7 @@ async function deleteExpense(id) {
 function renderExpenseList() {
   const eid = document.getElementById('expense-event-select').value;
   const area = document.getElementById('expense-list-area');
-  const exps = data.expenses.filter(e=>e.eventId===eid);
+  const exps = data.expenses.filter(e=>String(e.eventId)===String(eid));
   if (!exps.length) {
     area.innerHTML = '<div class="empty"><div class="empty-icon">💳</div><div class="empty-text">尚無費用記錄</div></div>';
     return;
@@ -868,7 +868,7 @@ function calcSplit() {
   if (!eid) { area.innerHTML = ''; return; }
   const ev = data.events.find(e=>e.id===eid);
   if (!ev) return;
-  const exps = data.expenses.filter(e=>e.eventId===eid);
+  const exps = data.expenses.filter(e=>String(e.eventId)===String(eid));
   if (!exps.length) {
     area.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">📊</div><div class="empty-text">此活動尚無費用記錄</div></div></div>';
     return;
@@ -940,7 +940,7 @@ function calcSplit() {
       // 各自金額型：壽星份由「核心非壽星」分攤；外部朋友只付自己份，不攤壽星
       const coreNonBdayPids = ev.participants.filter(pid => {
         const p = data.people.find(x=>x.id===pid);
-        return p && p.type==='core' && !ev.birthdays.includes(pid);
+        return p && p.type==='core' && !ev.birthdays.map(String).includes(String(pid));
       });
       let bdayTotal = 0;
       ex.items.forEach(item => {
@@ -1056,7 +1056,7 @@ function exportCSV() {
   });
   csv += '\n=== 費用清單 ===\n活動,費用說明,類型,金額,墊付人\n';
   data.expenses.forEach(ex => {
-    const evName = data.events.find(e=>e.id===ex.eventId)?.name||'';
+    const evName = data.events.find(e=>String(e.id)===String(ex.eventId))?.name||'';
     const payerName = data.people.find(p=>p.id===ex.payer)?.name||'';
     const amt = ex.type==='even' ? ex.amount : ex.items.reduce((s,i)=>s+i.amount,0);
     csv += `"${evName}","${ex.note}","${ex.type==='even'?'均分':'各自金額'}","${amt}","${payerName}"\n`;
