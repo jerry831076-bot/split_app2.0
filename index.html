@@ -982,22 +982,19 @@ function exportJSON() {
   toast('✅ JSON 已下載');
 }
 function exportCSV() {
-  let csv = '﻿=== 活動清單 ===
-活動名稱,日期,參與人員,壽星
-';
+  let csv = '\uFEFF=== 活動清單 ===\n活動名稱,日期,參與人員,壽星\n';
   data.events.forEach(ev => {
-    csv += `"${ev.name}","${ev.date||''}","${ev.participants.map(pid=>data.people.find(p=>p.id===sid(pid))?.name||'').join('・')}","${ev.birthdays.map(pid=>data.people.find(p=>p.id===sid(pid))?.name||'').join('・')}"
-`;
+    const members = ev.participants.map(pid=>data.people.find(p=>p.id===sid(pid))?.name||'').join('\u30FB');
+    const bdays   = ev.birthdays.map(pid=>data.people.find(p=>p.id===sid(pid))?.name||'').join('\u30FB');
+    csv += '"'+ev.name+'","'+(ev.date||'')+'","'+members+'","'+bdays+'"\n';
   });
-  csv += '
-=== 費用清單 ===
-活動,費用說明,類型,金額,墊付人
-';
+  csv += '\n=== 費用清單 ===\n活動,費用說明,類型,金額,墊付人\n';
   data.expenses.forEach(ex => {
     const items = data.expenseItems.filter(i=>sid(i.expenseId)===sid(ex.id));
     const amt   = ex.type==='even' ? (parseFloat(ex.amount)||0) : items.reduce((s,i)=>s+i.amount,0);
-    csv += `"${data.events.find(e=>e.id===sid(ex.eventId))?.name||''}","${ex.note}","${ex.type==='even'?'均分':'各自金額'}","${amt}","${data.people.find(p=>p.id===sid(ex.payer))?.name||''}"
-`;
+    const evName = data.events.find(e=>e.id===sid(ex.eventId))?.name||'';
+    const pName  = data.people.find(p=>p.id===sid(ex.payer))?.name||'';
+    csv += '"'+evName+'","'+ex.note+'","'+(ex.type==='even'?'均分':'各自金額')+'","'+amt+'","'+pName+'"\n';
   });
   dl(new Blob([csv],{type:'text/csv;charset=utf-8'}), '分帳報表_'+today()+'.csv');
   toast('✅ CSV 已下載');
