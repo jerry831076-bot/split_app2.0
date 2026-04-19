@@ -1000,8 +1000,7 @@ function copyExpenseList() {
     return s + (ex.type==='even' ? (parseFloat(ex.amount)||0) : items.reduce((a,i)=>a+i.amount,0));
   }, 0);
   lines.push('共 ' + exps.length + ' 筆｜總計 NT$' + fmtAmt(total));
-  copyText(lines.join('
-'));
+  copyText(lines.join('\n'));
 }
 
 function copyTransferList() {
@@ -1019,8 +1018,7 @@ function copyTransferList() {
       lines.push(esc2(from) + ' → ' + esc2(to) + '｜NT$' + fmtAmt(t.amount));
     });
   }
-  copyText(lines.join('
-'));
+  copyText(lines.join('\n'));
 }
 
 function copyText(text) {
