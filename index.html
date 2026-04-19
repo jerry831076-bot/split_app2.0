@@ -969,8 +969,74 @@ function calcSplit() {
       <td style="text-align:right">${netText}</td></tr>`;
   });
   html += '</tbody></table></div>';
+
+  // 複製按鈕
+  html += '<div style="display:flex;gap:8px;margin-top:4px">';
+  html += '<button class="btn btn-secondary btn-full" onclick="copyExpenseList()">📋 複製費用清單</button>';
+  html += '<button class="btn btn-secondary btn-full" onclick="copyTransferList()">💸 複製轉帳指示</button>';
+  html += '</div>';
+
   area.innerHTML = html;
+
+  // 儲存目前計算結果供複製使用
+  window._splitResult = { ev, exps, transfers, balance, participants };
 }
+
+function copyExpenseList() {
+  const r = window._splitResult;
+  if (!r) return toast('⚠️ 請先選擇活動計算分帳');
+  const { ev, exps } = r;
+  const evName = ev.name + (ev.date ? '（' + ev.date + '）' : '');
+  let lines = ['📋 ' + evName + '｜費用清單', ''];
+  exps.forEach(ex => {
+    const payerName = data.people.find(p=>p.id===sid(ex.payer))?.name||'?';
+    const items = data.expenseItems.filter(i=>sid(i.expenseId)===sid(ex.id));
+    const amt = ex.type==='even' ? (parseFloat(ex.amount)||0) : items.reduce((s,i)=>s+i.amount,0);
+    lines.push(esc2(ex.note||'費用') + '｜NT$' + fmtAmt(amt) + '｜墊付者：' + esc2(payerName));
+  });
+  lines.push('');
+  const total = exps.reduce((s,ex) => {
+    const items = data.expenseItems.filter(i=>sid(i.expenseId)===sid(ex.id));
+    return s + (ex.type==='even' ? (parseFloat(ex.amount)||0) : items.reduce((a,i)=>a+i.amount,0));
+  }, 0);
+  lines.push('共 ' + exps.length + ' 筆｜總計 NT$' + fmtAmt(total));
+  copyText(lines.join('
+'));
+}
+
+function copyTransferList() {
+  const r = window._splitResult;
+  if (!r) return toast('⚠️ 請先選擇活動計算分帳');
+  const { ev, transfers } = r;
+  const evName = ev.name + (ev.date ? '（' + ev.date + '）' : '');
+  let lines = ['💸 ' + evName + '｜轉帳指示', ''];
+  if (!transfers.length) {
+    lines.push('✅ 無需轉帳，已平帳！');
+  } else {
+    transfers.forEach(t => {
+      const from = data.people.find(p=>p.id===t.from)?.name||'?';
+      const to   = data.people.find(p=>p.id===t.to)?.name||'?';
+      lines.push(esc2(from) + ' → ' + esc2(to) + '｜NT$' + fmtAmt(t.amount));
+    });
+  }
+  copyText(lines.join('
+'));
+}
+
+function copyText(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => toast('✅ 已複製！貼到 LINE 吧'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast('✅ 已複製！貼到 LINE 吧');
+  }
+}
+
+function esc2(s) { return String(s); }
 
 // ===== 備份 =====
 function showBackupModal() { document.getElementById('backup-modal').classList.add('open'); }
